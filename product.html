@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product - TESTING</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&display=swap">
+<style>
+:root { --bg:#050810; --card:#0a0f1ab3; --border:#8892b026; --text:#f0f4ff; --muted:#8892b0; --red:#ff4d4d; --cyan:#00e5cc; }
+html,body{margin:0;padding:0;background:#050810;color:var(--text);font-family:Satoshi,Noto Sans,system-ui,sans-serif;min-height:100vh;}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1100px;margin:0 auto;padding:32px 16px 80px;}
+.nav{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:14px;margin-bottom:24px;}
+.nav a:hover{color:#fff}
+.grid{display:grid;gap:28px;grid-template-columns:1fr;}
+@media(min-width:900px){.grid{grid-template-columns:1fr 1fr;}}
+.card{border:1px solid var(--border);border-radius:16px;background:var(--card);overflow:hidden;}
+.img-wrap{aspect-ratio:1/1;background:#000;display:flex;align-items:center;justify-content:center;}
+.img-wrap img{width:100%;height:100%;object-fit:contain;background:#000;}
+.info{padding:24px;}
+h1{margin:0 0 12px;font-family:"Clash Display",system-ui,sans-serif;font-size:26px;}
+.desc{color:var(--muted);font-size:14.5px;line-height:1.6;margin-bottom:20px;}
+.price{font-size:24px;font-weight:700;color:var(--red);margin-bottom:18px;}
+.label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:600;}
+.req{color:var(--red)}
+.input, textarea{
+  width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);
+  background:#05081099;color:#fff;font-size:14px;margin-bottom:14px;box-sizing:border-box;
+}
+textarea{min-height:90px;resize:vertical}
+.qty-row{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.qty-box{display:flex;align-items:center;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#05081099;}
+.qty-box button{background:transparent;border:none;color:var(--muted);padding:10px 14px;cursor:pointer;font-size:16px;}
+.qty-box input{width:56px;text-align:center;border:none;background:transparent;color:#fff;font-size:14px;}
+.btn-buy{
+  width:100%;padding:14px;border:none;border-radius:12px;cursor:pointer;
+  background:linear-gradient(135deg,#ff4d4d,#991b1b);color:#fff;font-weight:700;font-size:15px;
+  font-family:"Clash Display",system-ui,sans-serif;margin-bottom:10px;
+}
+.btn-secondary{
+  width:100%;padding:14px;border-radius:12px;cursor:pointer;border:1px solid var(--red);
+  background:transparent;color:var(--red);font-weight:700;font-size:15px;
+}
+.stock{font-size:13px;color:var(--muted);margin-bottom:12px;}
+.oos{color:var(--red);font-weight:600;}
+.msg{margin-top:10px;font-size:13px;display:none;}
+.back{color:var(--cyan);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="nav">
+    <a class="back" href="smscode-dashboard.html">← Dashboard</a>
+    <span>/</span>
+    <span id="crumb">Product</span>
+  </nav>
+  <div class="grid" id="product-root">
+    <div class="card">
+      <div class="img-wrap"><img id="p-img" alt="" src=""></div>
+    </div>
+    <div class="card">
+      <div class="info">
+        <h1 id="p-name">Product</h1>
+        <div class="desc" id="p-desc"></div>
+        <div class="price" id="p-price">$0.00</div>
+        <div class="stock" id="p-stock"></div>
+        <form id="order-form">
+          <div id="custom-fields"></div>
+          <div class="qty-row">
+            <span class="label" style="margin:0">Quantity</span>
+            <div class="qty-box">
+              <button type="button" id="qty-minus">−</button>
+              <input type="number" id="qty" value="1" min="1">
+              <button type="button" id="qty-plus">+</button>
+            </div>
+          </div>
+          <button class="btn-buy" type="submit" id="btn-order">Buy Now</button>
+          <div class="msg" id="msg"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  function getProducts(){
+    try { var p=JSON.parse(localStorage.getItem('testing_products')||'[]'); return Array.isArray(p)?p:[]; } catch(e){ return []; }
+  }
+  function saveProducts(p){ localStorage.setItem('testing_products', JSON.stringify(p)); }
+  function getUsers(){ try{return JSON.parse(localStorage.getItem('testing_users')||'[]');}catch(e){return [];} }
+  function getAuth(){ try{return JSON.parse(localStorage.getItem('testing_auth')||'null');}catch(e){return null;} }
+  function getOrders(){ try{var o=JSON.parse(localStorage.getItem('testing_orders')||'[]');return Array.isArray(o)?o:[];}catch(e){return [];} }
+  function saveOrders(o){ localStorage.setItem('testing_orders', JSON.stringify(o)); }
+  function newOrderId(){ return 'ORD-'+Date.now().toString(36).toUpperCase()+'-'+Math.floor(Math.random()*9999); }
+
+  var params = new URLSearchParams(location.search);
+  var id = params.get('id') || '';
+  var products = getProducts();
+  var product = products.find(function(p){ return p.id === id; });
+  if (!product) {
+    document.getElementById('product-root').innerHTML = '<p style="color:#ff4d4d">Product not found. <a class="back" href="smscode-dashboard.html">Back</a></p>';
+    return;
+  }
+
+  document.title = product.name + ' - TESTING';
+  document.getElementById('crumb').textContent = product.name;
+  document.getElementById('p-name').textContent = product.name;
+  document.getElementById('p-desc').textContent = product.desc || '';
+  document.getElementById('p-price').textContent = product.price > 0 ? ('$'+Number(product.price).toFixed(2)) : 'By tier';
+  document.getElementById('p-img').src = product.image || '';
+  document.getElementById('p-img').alt = product.name;
+
+  var stock = Number(product.stock||0);
+  var stockEl = document.getElementById('p-stock');
+  if (stock <= 0) {
+    stockEl.innerHTML = '<span class="oos">Out of stock</span>';
+    document.getElementById('btn-order').disabled = true;
+    document.getElementById('btn-order').style.opacity = '0.5';
+  } else {
+    stockEl.textContent = 'In stock: ' + stock;
+  }
+
+  var fieldsWrap = document.getElementById('custom-fields');
+  (product.fields || []).forEach(function(f, i){
+    var lab = document.createElement('label');
+    lab.className = 'label';
+    lab.innerHTML = (f.label||'Field') + (f.required ? ' <span class="req">*</span>' : '');
+    fieldsWrap.appendChild(lab);
+    var input;
+    if (f.type === 'textarea') {
+      input = document.createElement('textarea');
+      input.placeholder = f.placeholder || '';
+    } else {
+      input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = f.placeholder || '';
+    }
+    input.className = 'input';
+    input.dataset.idx = i;
+    if (f.required) input.required = true;
+    fieldsWrap.appendChild(input);
+  });
+
+  var qty = document.getElementById('qty');
+  qty.max = Math.max(1, stock);
+  document.getElementById('qty-minus').onclick = function(){ qty.value = Math.max(1, (parseInt(qty.value)||1)-1); };
+  document.getElementById('qty-plus').onclick = function(){
+    var max = Math.max(1, stock);
+    qty.value = Math.min(max, (parseInt(qty.value)||1)+1);
+  };
+
+  document.getElementById('order-form').onsubmit = function(e){
+    e.preventDefault();
+    var auth = getAuth();
+    if (!auth || !auth.loggedIn) { alert('Please log in first'); location.href='index.html'; return; }
+    var q = parseInt(qty.value)||1;
+    if (q < 1) q = 1;
+    if (stock <= 0) { show('Out of stock', false); return; }
+    if (q > stock) { show('Only ' + stock + ' in stock', false); qty.value = stock; return; }
+
+    var answers = [];
+    fieldsWrap.querySelectorAll('input,textarea').forEach(function(el, i){
+      var f = (product.fields||[])[i] || {};
+      answers.push({ label: f.label||('Field '+(i+1)), value: el.value });
+    });
+
+    var users = getUsers();
+    var user = users.find(function(u){ return (u.email||'').toLowerCase() === (auth.email||'').toLowerCase(); });
+
+    var orders = getOrders();
+    orders.unshift({
+      id: newOrderId(),
+      service: product.name,
+      productId: product.id,
+      country: 'N/A',
+      amount: Number(product.price||0) * q,
+      qty: q,
+      status: 'PENDING_ADMIN',
+      clientEmail: auth.email,
+      clientName: (user&&user.name)||auth.name||auth.email,
+      clientId: (user&&user.userId)||auth.userId||'',
+      sellerEmail: product.sellerEmail || null,
+      sellerName: product.sellerName || null,
+      answers: answers,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    });
+    saveOrders(orders);
+
+    // decrease stock
+    var products = getProducts();
+    var idx = products.findIndex(function(p){ return p.id === product.id; });
+    if (idx >= 0) {
+      products[idx].stock = Math.max(0, Number(products[idx].stock||0) - q);
+      saveProducts(products);
+      stock = products[idx].stock;
+      stockEl.textContent = stock > 0 ? ('In stock: ' + stock) : '';
+      if (stock <= 0) {
+        stockEl.innerHTML = '<span class="oos">Out of stock</span>';
+        document.getElementById('btn-order').disabled = true;
+      }
+      qty.max = Math.max(1, stock);
+    }
+
+    show('Order placed! Waiting for admin approval.', true);
+    setTimeout(function(){ location.href='orders-page.html'; }, 900);
+  };
+
+  function show(t, ok){
+    var m = document.getElementById('msg');
+    m.style.display='block'; m.style.color = ok ? '#00e5cc' : '#ff4d4d'; m.textContent = t;
+  }
+})();
+</script>
+</body>
+</html>
